@@ -4,7 +4,7 @@ import UIKit
 /// 网络层：单点出口，全部走 HTTPS，Bearer 里带分发 token
 enum Net {
     static var base: String {
-        UserDefaults.standard.string(forKey: "base") ?? "https://fa78778d569282.lhr.life"
+        UserDefaults.standard.string(forKey: "base") ?? "https://agtja-85-211-251-86.free.pinggy.net"
     }
 
     static func headers() -> [String: String] {
