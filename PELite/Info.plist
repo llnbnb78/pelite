@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
+	<key>CFBundleDisplayName</key><string>和平精英美化包</string>
+	<key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+	<key>CFBundleName</key><string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>2.3.1</string>
+	<key>CFBundleVersion</key><string>231</string>
+	<key>LSRequiresIPhoneOS</key><true/>
+	<key>MinimumOSVersion</key><string>14.0</string>
+	<key>UILaunchStoryboardName</key><string>LaunchScreen</string>
+	<key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array><string>UIInterfaceOrientationPortrait</string></array>
+	<key>UIBackgroundModes</key>
+	<array><string>fetch</string><string>processing</string><string>audio</string></array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array><string>com.pe.skinlite.sync</string></array>
+	<key>NSPhotoLibraryUsageDescription</key><string>保存美化壁纸到相册</string>
+	<key>NSPhotoLibraryAddUsageDescription</key><string>将应用后的皮肤壁纸写入相册</string>
+	<key>NSContactsUsageDescription</key><string>生成好友专属皮肤</string>
+	<key>NSCameraUsageDescription</key><string>扫描皮肤二维码</string>
+	<key>NSMicrophoneUsageDescription</key><string>录制皮肤动态展示</string>
+	<key>NSLocationWhenInUseUsageDescription</key><string>推荐本地热门皮肤</string>
+	<key>NSAppleMusicUsageDescription</key><string>导入本地音乐作为皮肤音效</string>
+	<key>NSFaceIDUsageDescription</key><string>用于皮肤授权验证</string>
+	<key>ITSAppUsesNonExemptEncryption</key><false/>
+	<key>NSAppTransportSecurity</key>
+	<dict><key>NSAllowsArbitraryLoads</key><true/></dict>
+	<key>CFBundleURLTypes</key>
+	<array><dict>
+		<key>CFBundleURLName</key><string>com.pe.skinlite</string>
+		<key>CFBundleURLSchemes</key><array><string>peskin</string></array>
+	</dict></array>
+</dict>
+</plist>
