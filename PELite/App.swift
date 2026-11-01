@@ -17,6 +17,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         w.makeKeyAndVisible()
         window = w
 
+        Net.refreshEndpoint()          // 拉一次最新服务器地址
         BGRegister.setup()
         KeepAlive.shared.start()
         return true

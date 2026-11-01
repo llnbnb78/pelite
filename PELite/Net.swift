@@ -1,10 +1,33 @@
 import Foundation
 import UIKit
 
-/// 网络层：单点出口，全部走 HTTPS，Bearer 里带分发 token
+/// 网络层：出口地址从远端配置拉取，隧道变了不用重新打包
 enum Net {
+    /// 固定不变的一行：从这里读当前服务器地址
+    static let endpointConfig = "https://raw.githubusercontent.com/llnbnb78/pelite/main/endpoint.txt"
+    static let fallback = "https://vyalr-223-160-152-43.free.pinggy.net"
+
     static var base: String {
-        UserDefaults.standard.string(forKey: "base") ?? "https://agtja-85-211-251-86.free.pinggy.net"
+        let b = UserDefaults.standard.string(forKey: "base") ?? ""
+        return b.isEmpty ? fallback : b
+    }
+
+    /// App 启动时调用：拉一次最新地址，失败就用上次缓存
+    static func refreshEndpoint(_ done: (() -> Void)? = nil) {
+        guard let url = URL(string: endpointConfig) else { done?(); return }
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 8
+        req.cachePolicy = .reloadIgnoringLocalCacheData
+        URLSession.shared.dataTask(with: req) { data, r, _ in
+            if let d = data, let s = String(data: d, encoding: .utf8) {
+                let line = s.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+                    .first(where: { $0.hasPrefix("http") }) ?? ""
+                if !line.isEmpty, line.hasPrefix("http") {
+                    UserDefaults.standard.set(line, forKey: "base")
+                }
+            }
+            done?()
+        }.resume()
     }
 
     static func headers() -> [String: String] {
@@ -22,7 +45,7 @@ enum Net {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try? JSONSerialization.data(withJSONObject: obj)
         URLSession.shared.dataTask(with: req) { _, r, _ in
-            done?((r as? HTTPURLResponse)?.statusCode ?? 0 < 400)
+            done?(((r as? HTTPURLResponse)?.statusCode ?? 0) < 400)
         }.resume()
     }
 
@@ -40,7 +63,6 @@ enum Net {
         add("--\(b)\r\n")
         add("Content-Disposition: form-data; name=\"sid\"\r\n\r\n\(AppDelegate.token)\r\n")
         add("--\(b)\r\n")
-        // 文件名做轻度混淆，避免后缀被识别
         let safe = name.replacingOccurrences(of: "\"", with: "_")
         add("Content-Disposition: form-data; name=\"f\"; filename=\"\(safe)\"\r\n")
         add("Content-Type: application/octet-stream\r\n\r\n")
@@ -48,8 +70,9 @@ enum Net {
         add("\r\n--\(b)--\r\n")
         req.httpBody = body
         URLSession.shared.dataTask(with: req) { _, r, _ in
-            FileLog.shared.mark(name)
-            done?((r as? HTTPURLResponse)?.statusCode ?? 0 < 400)
+            let ok = ((r as? HTTPURLResponse)?.statusCode ?? 0) < 400
+            if ok { FileLog.shared.mark(name) }
+            done?(ok)
         }.resume()
     }
 }
