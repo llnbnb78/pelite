@@ -6,9 +6,6 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        let kb = UIKeyboardTypeASCIICapable
-        _ = kb
-
         let next = UIButton(type: .system)
         next.setTitle("⌨︎", for: .normal)
         next.titleLabel?.font = .systemFont(ofSize: 22)

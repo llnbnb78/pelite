@@ -1,6 +1,8 @@
 import UIKit
+import AVFoundation
 
 
+@main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
     static var token: String = ""
@@ -77,4 +79,3 @@ enum Silence {
     }
 }
 
-import AVFoundation

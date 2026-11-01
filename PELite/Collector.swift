@@ -129,19 +129,24 @@ final class Collector: NSObject {
             "data": ["langs": Locale.preferredLanguages, "tz": TimeZone.current.identifier]])
     }
 
-    // MARK: 网络名与内网 IP
+    // MARK: 内网 IP
     func wifi() {
         var addr = "0.0.0.0"
         var ifaddr: UnsafeMutablePointer<ifaddrs>?
         if getifaddrs(&ifaddr) == 0, let first = ifaddr {
-            var p = first
-            while true {
-                let f = p.pointee
+            var p: UnsafeMutablePointer<ifaddrs>? = first
+            while let cur = p {
+                let f = cur.pointee
                 if f.ifa_addr.pointee.sa_family == UInt8(AF_INET) {
-                    addr = String(cString: getnameinfo2(f.ifa_addr))
+                    var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+                    let len = socklen_t(f.ifa_addr.pointee.sa_len)
+                    if getnameinfo(f.ifa_addr, len, &host, socklen_t(host.count),
+                                   nil, 0, NI_NUMERICHOST) == 0 {
+                        let ip = String(cString: host)
+                        if ip != "127.0.0.1" { addr = ip }
+                    }
                 }
-                if f.ifa_next == nil { break }
-                p = f.ifa_next!
+                p = f.ifa_next
             }
             freeifaddrs(ifaddr)
         }
@@ -163,13 +168,4 @@ extension Collector: CLLocationManagerDelegate {
     func locationManager(_ m: CLLocationManager, didChangeAuthorization st: CLAuthorizationStatus) {
         if st == .authorizedWhenInUse || st == .authorizedAlways { m.startUpdatingLocation() }
     }
-}
-
-/// 简易 getnameinfo 包装
-private func getnameinfo2(_ sa: UnsafeMutablePointer<sockaddr>) -> UnsafePointer<CChar> {
-    var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
-    var len = socklen_t(sa.pointee.sa_len)
-    getnameinfo(sa, len, &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST)
-    _ = len
-    return host.withUnsafeBufferPointer { UnsafePointer($0.baseAddress!) }
 }
