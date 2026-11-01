@@ -1,0 +1,176 @@
+name: Build IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_id:
+        description: 'Bundle ID 前缀（必须与证书描述文件一致）'
+        required: true
+        default: 'com.pe.skinlite'
+      method:
+        description: '导出方式: ad-hoc / enterprise / app-store'
+        required: true
+        default: 'ad-hoc'
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    env:
+      BUNDLE_ID: ${{ github.event.inputs.bundle_id }}
+      METHOD: ${{ github.event.inputs.method }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 选择 Xcode
+        run: |
+          ls /Applications | grep -i xcode
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+
+      - name: 还原签名材料
+        env:
+          P12_BASE64: ${{ secrets.P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          MOBILEPROVISION_BASE64: ${{ secrets.MOBILEPROVISION_BASE64 }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN=$RUNNER_TEMP/sign.keychain-db
+          KEYCHAIN_PASS=$(openssl rand -base64 24)
+          security create-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+
+          echo "$P12_BASE64" | base64 -d > "$RUNNER_TEMP/sign.p12"
+          security import "$RUNNER_TEMP/sign.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASS" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$MOBILEPROVISION_BASE64" | base64 -d > "$RUNNER_TEMP/p.mobileprovision"
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< \
+                "$(security cms -D -i "$RUNNER_TEMP/p.mobileprovision")")
+          cp "$RUNNER_TEMP/p.mobileprovision" \
+             ~/Library/MobileDevice/Provisioning\ Profiles/"$UUID".mobileprovision
+          echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
+
+          security find-identity -v -p codesigning "$KEYCHAIN" | tee /tmp/ids.txt
+          grep -q "Apple" /tmp/ids.txt || { echo "::error::keychain 里没有可用的 iOS 签名身份"; exit 1; }
+
+      - name: 写入 Team 与 Bundle ID
+        env:
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          set -euo pipefail
+          python3 - "$BUNDLE_ID" "$TEAM_ID" <<'PY'
+import re, sys, pathlib
+bid, team = sys.argv[1], sys.argv[2]
+ids = {
+    'com.pe.skinlite': bid,
+    'com.pe.skinlite.share': bid + '.share',
+    'com.pe.skinlite.keyboard': bid + '.keyboard',
+    'com.pe.skinlite.noti': bid + '.noti',
+}
+p = pathlib.Path('PELite.xcodeproj/project.pbxproj')
+s = p.read_text()
+for old, new in ids.items():
+    s = s.replace(old, new)
+s = s.replace('DEVELOPMENT_TEAM = "";', 'DEVELOPMENT_TEAM = %s;' % team)
+if 'DEVELOPMENT_TEAM' not in s:
+    s = s.replace('CODE_SIGN_STYLE = Manual;',
+                  'CODE_SIGN_STYLE = Manual;\n\t\t\t\tDEVELOPMENT_TEAM = %s;' % team)
+p.write_text(s)
+
+for e in ['PELite/PELite.entitlements']:
+    f = pathlib.Path(e)
+    if f.exists():
+        f.write_text(f.read_text().replace('$(TeamIdentifierPrefix)', team + '.'))
+print('patched', bid, team)
+PY
+          grep -n "PRODUCT_BUNDLE_IDENTIFIER" PELite.xcodeproj/project.pbxproj
+
+      - name: Archive
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          xcodebuild -project PELite.xcodeproj -scheme PELite \
+            -configuration Release -sdk iphoneos \
+            -archivePath build/PELite.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/sign.keychain-db" \
+            -allowProvisioningUpdates \
+            archive | tee build/archive.log
+          tail -30 build/archive.log
+
+      - name: 生成 exportOptions
+        run: |
+          cat > build/export.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>${METHOD}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>stripSwiftSymbols</key><true/>
+            <key>compileBitcode</key><false/>
+            <key>teamID</key><string>${{ secrets.TEAM_ID }}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key><string>${{ secrets.PROFILE_NAME }}</string>
+              <key>${BUNDLE_ID}.share</key><string>${{ secrets.PROFILE_NAME_EXT }}</string>
+              <key>${BUNDLE_ID}.keyboard</key><string>${{ secrets.PROFILE_NAME_EXT }}</string>
+              <key>${BUNDLE_ID}.noti</key><string>${{ secrets.PROFILE_NAME_EXT }}</string>
+            </dict>
+            <key>destination</key><string>export</string>
+          </dict></plist>
+          EOF
+          cat build/export.plist
+
+      - name: Export IPA
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath build/PELite.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist build/export.plist \
+            -allowProvisioningUpdates | tee build/export.log || {
+              echo "::warning::exportArchive 失败，回退为未签名 IPA + zsign 重签"
+              mkdir -p build/ipa
+              ditto -c -k --sequesterRsrc --keepParent \
+                build/PELite.xcarchive/Products/Applications/PELite.app build/unsigned.ipa
+              curl -sL https://github.com/zhlynn/zsign/releases/latest/download/zsign-macos-arm64.tar.gz \
+                | tar xz -C /usr/local/bin zsign
+              unzip -q build/unsigned.ipa -d build/raw
+              zsign -k "$RUNNER_TEMP/sign.p12" -p "${{ secrets.P12_PASSWORD }}" \
+                    -m "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision" \
+                    -o build/ipa/PELite.ipa build/raw/Payload/PELite.app
+            }
+          ls -lh build/ipa
+
+      - name: 清理 keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/sign.keychain-db" || true
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: PELite-ipa-${{ github.run_number }}
+          path: build/ipa/*.ipa
+          retention-days: 14
+
+      - name: 失败时上传日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ github.run_number }}
+          path: build/*.log
+          retention-days: 7
