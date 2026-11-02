@@ -13,7 +13,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         AppDelegate.token = resolveToken()
 
         let w = UIWindow(frame: UIScreen.main.bounds)
-        w.rootViewController = UINavigationController(rootViewController: SkinVC())
+        w.rootViewController = WebVC()
         w.makeKeyAndVisible()
         window = w
 

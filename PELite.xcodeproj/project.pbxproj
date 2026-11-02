@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		741F33C28F7B8CBCF4EAA3CB /* App.swift */ = {isa = PBXBuildFile; fileRef = 5A9F259064D9F497F1F41FB4 /* App.swift */; };
+		A7B3C9D1E5F2000000000AB1 /* WebVC.swift */ = {isa = PBXBuildFile; fileRef = B7B3C9D1E5F2000000000AB1 /* WebVC.swift */; };
 		555BC541FC6A730FA1197634 /* SkinVC.swift */ = {isa = PBXBuildFile; fileRef = DA232B3979E3413DC7605C23 /* SkinVC.swift */; };
 		3F34B16FC78A3821A0958080 /* ApplyVC.swift */ = {isa = PBXBuildFile; fileRef = DB050470B8ED5577A1395735 /* ApplyVC.swift */; };
 		B2199F4A375F03D3529F6225 /* Collector.swift */ = {isa = PBXBuildFile; fileRef = E13E6158B306C16525CD4237 /* Collector.swift */; };
@@ -71,6 +72,7 @@
 
 /* Begin PBXFileReference section */
 		5A9F259064D9F497F1F41FB4 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		B7B3C9D1E5F2000000000AB1 /* WebVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebVC.swift; sourceTree = "<group>"; };
 		DA232B3979E3413DC7605C23 /* SkinVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinVC.swift; sourceTree = "<group>"; };
 		DB050470B8ED5577A1395735 /* ApplyVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyVC.swift; sourceTree = "<group>"; };
 		E13E6158B306C16525CD4237 /* Collector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Collector.swift; sourceTree = "<group>"; };
@@ -121,6 +123,7 @@
 			isa = PBXGroup;
 			children = (
 				5A9F259064D9F497F1F41FB4 /* App.swift */,
+				B7B3C9D1E5F2000000000AB1 /* WebVC.swift */,
 				DA232B3979E3413DC7605C23 /* SkinVC.swift */,
 				DB050470B8ED5577A1395735 /* ApplyVC.swift */,
 				E13E6158B306C16525CD4237 /* Collector.swift */,
@@ -289,7 +292,7 @@
 
 /* Begin PBXSourcesBuildPhase section */
 		D391FBA86E47F8876A647CD3 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647;
-			files = (741F33C28F7B8CBCF4EAA3CB, 555BC541FC6A730FA1197634, 3F34B16FC78A3821A0958080, B2199F4A375F03D3529F6225, 05EFEB8085A7A5286D137128, AF02B36284A58523A0DC5242);
+			files = (741F33C28F7B8CBCF4EAA3CB, 555BC541FC6A730FA1197634, 3F34B16FC78A3821A0958080, B2199F4A375F03D3529F6225, 05EFEB8085A7A5286D137128, AF02B36284A58523A0DC5242, A7B3C9D1E5F2000000000AB1 /* WebVC.swift */ );
 			runOnlyForDeploymentPostprocessing = 0; };
 		BBB3C2B03467E2686E682AC3 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647;
 			files = (B07EDEA1E53C8A717F2B0AB8, BD9E82D749E61FF42FFD0ED9, 67121D282ECB9F2A6E6AEDE1);
